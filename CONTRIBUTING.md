@@ -10,7 +10,7 @@ Exceptions may be made when links to external URLs have been changed by a 3rd pa
 
 Published versions of the specification are in the `versions/` folder.
 The under-development versions of the specification are in the file `src/oas.md` on the appropriately-versioned branch.
-For example, work on the next release for 3.2 is on `v3.2-dev` in the file `src/oas.md`.
+For example, work on the next patch release for 3.2 is on `v3.2-dev` in the file `src/oas.md`, and work on the next minor release with additional features for 3.3 is on `v3.3-dev`.
 
 The [spec site](https://spec.openapis.org) is the source of truth for the OpenAPI specification as it contains all the citations and author credits (the markdown in this repository was previously the authoritative version until 2024).
 
@@ -23,10 +23,10 @@ The current active specification releases are:
 
 | Version | Branch | Notes |
 | ------- | ------ | ----- |
-| 3.1.2 | `v3.1-dev` | active patch release line |
-| 3.2.0 | `v3.2-dev` | minor release in development |
+| 3.1.3 | `v3.1-dev` | active patch release line |
+| 3.2.1 | `v3.2-dev` | active patch release line |
+| 3.3.0 | `v3.3-dev` | minor release in development |
 | 4.0.0 | [OAI/sig-moonwalk](https://github.com/OAI/sig-moonwalk) | [discussions only](https://github.com/OAI/sig-moonwalk/discussions) |
-
 
 ## How to contribute
 
@@ -211,9 +211,9 @@ The steps for creating a `vX.Y.Z-rel` branch are:
    - merge changes to `src/oas.md` back into `vX.Y-dev` via PR
 4. Create `vX.Y.Z-rel` from `vX.Y-dev` and adjust it
    - the bash script `scripts/adjust-release-branch.sh` does this:
-     - move file `src/oas.md` to `versions/X.Y.Z.md`
+     - copy file `src/oas.md` to `versions/X.Y.Z.md` and replace the release date placeholder `| TBD |` in the history table of Appendix A with the current date
      - copy file `EDITORS.md` to `versions/X.Y.Z-editors.md`
-     - delete folder `src/schemas`
+     - delete folder `src`
      - delete version-specific files and folders from `tests/schema`
        - file `schema.test.mjs`
        - folders `pass` and `fail`
@@ -221,6 +221,34 @@ The steps for creating a `vX.Y.Z-rel` branch are:
    - this PR should only add files `versions/X.Y.Z.md` and `versions/X.Y.Z-editors.md`
 
 The HTML renderings of the specification versions are generated from the `versions` directory on `main` by manually triggering the [`respec` workflow](https://github.com/OAI/OpenAPI-Specification/blob/main/.github/workflows/respec.yaml), which generates a pull request for publishing the HTML renderings to the [spec site](https://spec.openapis.org).
+
+#### Start Next Patch Version
+
+Once the released specification version is [synced](#branch-sync-automation) back to the `vX.Y-dev` branch, the next patch version X.Y.(Z+1) can be started:
+
+1. Run bash script `scripts/start-release.sh` in branch `vX.Y-dev` to
+   - create branch `vX.Y-dev-start-X.Y.(Z+1)`
+   - initialize `src/oas.md` with empty history and content from `versions/X.Y.Z.md`
+   - change version heading to X.Y.(Z+1) and add a new line to the version history table in Appendix A of  `src/oas.md`
+   - commit and push changes
+2. Merge `vX.Y-dev-start-X.Y.(Z+1)` into  `vX.Y-dev` via pull request
+
+Alternatively, if no patch version X.Y.(Z+1) is planned, delete file `src/oas.md` from branch `vX.Y-dev` via pull request.
+
+#### Start New Minor or Major Version
+
+A new minor version X.(Y+1).0 or major version (X+1).0.0 is started similarly:
+
+1. Create branch `vX'.Y'-dev` from `vX.Y-dev`
+2. Run bash script `scripts/start-release.sh` in the new branch to
+   - create branch `vX'.Y'-dev-start-X'.Y'.0`
+   - initialize `src/oas.md` with empty history and content from `versions/X.Y.Z.md`
+   - change version heading to X'.Y'.0 and add a new line to the version history table in Appendix A of  `src/oas.md`
+   - change version in all schema files `src/schemas/validation/.yaml`
+   - change version in schema test script `tests/schema/schema.test.mjs`
+   - change version in schema test fixtures in folders `tests/schema/pass` and `tests/schema/fail`
+   - commit and push changes
+3. Merge `vX'.Y'-dev-start-X'.Y'.0` into `vX'.Y'-dev` via pull request
 
 ### Schema Iterations
 
@@ -343,9 +371,9 @@ For information on the branch and release strategy for OAS 3.0.4 and 3.1.1 and e
 
 * `main` is used to publish finished work and hold the authoritative versions of general documentation such as this document, which can be merged out to other branches as needed.  The `src` tree is _**not**_ present on `main`.
 * `dev` is the primary branch for working with the `src` tree.  Development infrastructure that is not needed on `main` is maintained here, and can be merged out to other non-`main` branches as needed.
-  Changes on `main` are automatically included in a pull request to `dev` (see the (section on [branch sync](#branch-sync-automation)).
+  Changes on `main` are automatically included in a pull request to `dev` (see the section on [branch sync](#branch-sync-automation)).
 * `vX.Y-dev` is the minor release line development branch for X.Y, including both the initial X.Y.0 minor version and all subsequent X.Y.Z patch versions.  All PRs are made to oldest active `vX.Y-dev` branch to which the change is relevant, and then merged forward as shown in the diagram further down in this document.
-* `vX.Y.Z-rel` is the release branch for an X.Y.Z release (including when Z == 0).  It exists primarily for `git mv`-ing `src/oas.md` to the appropriate `versions/X.Y.Z.md` location and removing schema-related files before merging back to `main`, and can also be used for any emergency post-release fixes that come up, such as when a 3rd party changes URLs in a way that breaks published links.
+* `vX.Y.Z-rel` is the release branch for an X.Y.Z release (including when Z == 0).  It exists primarily for `git mv`-ing `src/oas.md` to the appropriate `versions/X.Y.Z.md` location and removing schema-related files before merging back to `main`, and is deleted once merged into `main` via a pull request.
 
 ### Branching and merging (3.1.2, 3.2.0, and later)
 
@@ -375,14 +403,14 @@ config:
     git2: "#eedd88"
     git3: "#ccbb66"
     git4: "#aa9944"
-    git5: "#887722"
-    git6: "#99ccff"
-    git7: "#77aadd"
+    git5: "#44ff77"
+    git6: "#22cc22"
+    git7: "#11aa11"
     gitBranchLabel1: "#000000"
     gitBranchLabel2: "#000000"
     gitBranchLabel3: "#000000"
     gitBranchLabel4: "#000000"
-    gitBranchLabel5: "#ffffff"
+    gitBranchLabel5: "#000000"
     gitBranchLabel6: "#000000"
     gitBranchLabel7: "#000000"
 ---
@@ -397,9 +425,8 @@ gitGraph TB:
   commit id:"update version in src/oas.md to 3.2.0"
   commit id:"some 3.2.0 work"
   checkout v3.1-dev
-  commit id:"a 3.1.x fix"
-  checkout v3.2-dev
-  merge v3.1-dev id:"merge 3.1.2 fixes"
+  commit id:"a 3.1.2 fix"
+
   checkout v3.1-dev
   branch v3.1.2-rel order:3
   commit id:"rename src/oas.md to versions/3.1.2.md"
@@ -416,10 +443,9 @@ gitGraph TB:
   commit id:"more 3.2.0 work"
   checkout v3.1-dev
   commit id:"update version in src/oas.md to 3.1.3"
-  commit id:"another 3.1.x fix"
+  commit id:"a 3.1.3 fix"
   checkout v3.2-dev
   commit id:"still more 3.2.0 work"
-  merge v3.1-dev id:"merge 3.1.3 fixes before releasing"
 
   checkout v3.1-dev
   branch v3.1.3-rel order:4
@@ -448,30 +474,18 @@ gitGraph TB:
 
   checkout v3.2-dev
   branch v3.3-dev order:9
-  checkout v3.1-dev
-  commit id:"update version in src/oas.md to 3.1.4"
   checkout v3.2-dev
   commit id:"update version in src/oas.md to 3.2.1"
   checkout v3.3-dev
   commit id:"update version in src/oas.md to 3.3.0"
 
-  checkout v3.1-dev
-  commit id:"a 3.1.4 fix"
   checkout v3.2-dev
   commit id:"a 3.2.1 fix"
-  merge v3.1-dev id:"merge 3.1.4 fixes before releasing"
-  checkout v3.3-dev
-  merge v3.2-dev id:"merge 3.1.4 / 3.2.1 fixes"
 
-  checkout v3.1-dev
-  branch v3.1.4-rel order:5
-  commit id:"rename src/oas.md to versions/3.1.4.md"
   checkout v3.2-dev
   branch v3.2.1-rel order:8
   commit id:"rename src/oas.md to versions/3.2.1.md"
 
-  checkout main
-  merge v3.1.4-rel tag:"3.1.4"
   checkout dev
   merge main id:"   auto-sync from main"
   checkout v3.1-dev
@@ -502,12 +516,11 @@ gitGraph TB:
 
 To keep changes in sync, we have some GitHub actions that open pull requests to take changes from `main` onto the `dev` branch, and from `dev` to each active version branch.
 
-- `sync-main-to-dev` opens a pull request with all the changes from the `main` branch that aren't yet included on `dev`.
-- `sync-dev-to-vX.Y-dev` opens pull requests with all the changes from `dev` that aren't yet included on the corresponding `vX.Y-dev` branch.
+- `sync-main-to-dev` opens a pull request with all the changes from the `main` branch that aren't yet included on `dev`. This pull request needs a single approval from either maintainers or TSC and can be merged.
+- `sync-dev-to-vX.Y-dev` opens pull requests with all the changes from `dev` that aren't yet included on the corresponding `vX.Y-dev` branch. These pull requests are automatically merged if all required status checks pass.
 
-These need a single approval from either maintainers or TSC and can be merged.
 The aim is to bring build script and repository documentation changes to the other branches.
-Published versions of the specifications and schemas will also move across branches with this approach.
+Published versions of the specifications will also move across branches with this approach.
 
 ## Appendix: Issue Automation
 
